@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sukino Healthcare – Chat Support</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  #chat-wrap {
+    width: 100%;
+    max-width: 480px;
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 680px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  #chat-header {
+    background: linear-gradient(135deg, #1D9E75, #0F6E56);
+    color: #fff;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #chat-header .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  #chat-header .info { flex: 1; }
+  #chat-header .name { font-size: 15px; font-weight: 600; }
+  #chat-header .status { font-size: 12px; opacity: 0.85; margin-top: 1px; }
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f7f9fb;
+  }
+  #messages::-webkit-scrollbar { width: 4px; }
+  #messages::-webkit-scrollbar-thumb { background: #c8d6e5; border-radius: 4px; }
+  .msg { display: flex; flex-direction: column; max-width: 88%; }
+  .msg.bot { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .bot .bubble {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-bottom-left-radius: 4px;
+    color: #1a202c;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .user .bubble {
+    background: linear-gradient(135deg, #1D9E75, #0F6E56);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .opt-btn {
+    background: #fff;
+    border: 1.5px solid #1D9E75;
+    color: #0F6E56;
+    border-radius: 10px;
+    padding: 8px 13px;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .opt-btn:hover { background: #e8f8f2; transform: translateX(2px); }
+  .opt-btn:active { transform: scale(0.98); }
+  .opt-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
+  #input-row {
+    padding: 12px 14px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 8px;
+    background: #fff;
+    flex-shrink: 0;
+  }
+  #user-input {
+    flex: 1;
+    border: 1px solid #cbd5e0;
+    border-radius: 10px;
+    padding: 9px 13px;
+    font-size: 14px;
+    background: #f7f9fb;
+    color: #1a202c;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  #user-input:focus { border-color: #1D9E75; background: #fff; }
+  #send-btn {
+    background: #1D9E75;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #send-btn:hover { background: #0F6E56; }
+  #send-btn:active { transform: scale(0.95); }
+  .timestamp { font-size: 11px; color: #a0aec0; margin-top: 4px; padding: 0 4px; }
+  .bot .timestamp { align-self: flex-start; }
+  .user .timestamp { align-self: flex-end; }
+  .typing { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #1D9E75; animation: bounce 1s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.15s; }
+  .dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  .tag {
+    display: inline-block; font-size: 11px;
+    background: #e8f8f2; color: #0F6E56;
+    border-radius: 6px; padding: 2px 8px;
+    margin-bottom: 5px; font-weight: 600;
+    border: 1px solid #b2dfcf;
+  }
+  .tag.ticket { background: #fff8e8; color: #b7791f; border-color: #f6d860; }
+  @media (max-width: 520px) {
+    body { padding: 0; align-items: stretch; }
+    #chat-wrap { max-width: 100%; height: 100vh; border-radius: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div id="chat-wrap" role="main">
+  <div id="chat-header">
+    <div class="avatar">🏥</div>
+    <div class="info">
+      <div class="name">Sukino Healthcare</div>
+      <div class="status">● Online — Support Chat</div>
+    </div>
+  </div>
+  <div id="messages" aria-live="polite" aria-label="Chat messages"></div>
+  <div id="input-row">
+    <input id="user-input" type="text" placeholder="Type a message or choose an option..." aria-label="Type your message" autocomplete="off" />
+    <button id="send-btn" aria-label="Send message"><i class="ti ti-send"></i></button>
+  </div>
+</div>
+
+<script>
+const msgs = document.getElementById('messages');
+const input = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+
+let state = { step: 'welcome', data: {}, leadData: {} };
+
+function ts() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+function scrollBottom() {
+  setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 60);
+}
+
+function addMsg(html, sender, options) {
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${sender}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = html;
+  wrap.appendChild(bubble);
+  if (options && options.length) {
+    const grid = document.createElement('div');
+    grid.className = 'options-grid';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.textContent = opt.label;
+      btn.onclick = () => { disableOptions(grid); handleOption(opt.value || opt.label, opt.label); };
+      grid.appendChild(btn);
+    });
+    wrap.appendChild(grid);
+  }
+  const time = document.createElement('div');
+  time.className = 'timestamp';
+  time.textContent = ts();
+  wrap.appendChild(time);
+  msgs.appendChild(wrap);
+  scrollBottom();
+}
+
+function disableOptions(grid) {
+  grid.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+}
+function showTyping() {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot'; wrap.id = 'typing-indicator';
+  const b = document.createElement('div'); b.className = 'bubble';
+  b.innerHTML = '<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  wrap.appendChild(b); msgs.appendChild(wrap); scrollBottom();
+}
+function removeTyping() { const t = document.getElementById('typing-indicator'); if (t) t.remove(); }
+
+function botSay(html, options, delay) {
+  return new Promise(res => {
+    showTyping();
+    setTimeout(() => { removeTyping(); addMsg(html, 'bot', options); res(); }, delay || 650);
+  });
+}
+function userSay(text) { addMsg(text, 'user'); }
+
+async function mainMenu() {
+  state.step = 'main_menu';
+  await botSay('Welcome to <strong>Sukino Healthcare</strong> 👋<br>We\'re here to help with rehabilitation, long-term care, home healthcare, OPD consultations, and support services.<br><br>Please select an option:', [
+    { label: '🏥  Admission', value: 'admission' },
+    { label: '🏠  Home Care', value: 'home_care' },
+    { label: '🩺  OPD Consultation', value: 'opd' },
+    { label: '💼  Job Inquiry', value: 'job' },
+    { label: '💬  Speak to a Representative', value: 'speak' },
+    { label: '📞  Request a Call Back', value: 'callback' }
+  ]);
+}
+
+async function handleOption(value, label) {
+  userSay(label);
+  if (value === 'restart') { state = { step: 'welcome', data: {}, leadData: {} }; await mainMenu(); return; }
+
+  switch (state.step) {
+    case 'main_menu':
+      state.data.service = value;
+      if (['admission','home_care','opd','speak','callback'].includes(value)) {
+        state.step = value + '_existing';
+        await botSay('Has the patient previously received any services from Sukino?', [
+          { label: '✅  Yes — Existing patient', value: 'yes' },
+          { label: '🆕  No — New inquiry', value: 'no' }
+        ]);
+      } else if (value === 'job') {
+        state.step = 'job_role';
+        await botSay('Which role are you interested in?', [
+          { label: 'Nurse' }, { label: 'Physiotherapist' }, { label: 'Doctor' },
+          { label: 'Caregiver' }, { label: 'Administration' }, { label: 'Sales & Marketing' }, { label: 'Other' }
+        ]);
+      }
+      break;
+
+    case 'admission_existing': case 'home_care_existing': case 'opd_existing': case 'speak_existing': case 'callback_existing':
+      const svc = state.data.service;
+      if (value === 'yes') {
+        state.step = svc + '_spid';
+        await botSay('Please enter your <strong>Patient SP ID</strong> (e.g. SP12345).<br>Type it in the box below and press Send. 👇');
+      } else {
+        if (svc === 'admission') { state.step = 'adm_care_type'; await askCareType(); }
+        else if (svc === 'home_care') { state.step = 'hc_service'; await askHCService(); }
+        else if (svc === 'opd') { state.step = 'opd_consult'; await askOPDConsult(); }
+        else if (svc === 'speak') {
+          state.step = 'speak_topic';
+          await botSay('What would you like to discuss?', [
+            { label: 'Admission' }, { label: 'Home Care' }, { label: 'OPD' },
+            { label: 'Partnership / Doctor Referral' }, { label: 'General Inquiry' }
+          ]);
+        } else if (svc === 'callback') {
+          state.step = 'cb_reason_new';
+          await botSay('What is the reason for your callback?', [
+            { label: 'Admission' }, { label: 'Home Care' }, { label: 'OPD' },
+            { label: 'Partnership / Doctor Referral' }, { label: 'General Inquiry' }
+          ]);
+        }
+      }
+      break;
+
+    case 'adm_care_type': state.leadData.careType = label; state.step = 'adm_hospital';
+      await botSay('Is the patient currently admitted in a hospital?', [{ label: '✅  Yes', value: 'yes' }, { label: '❌  No', value: 'no' }]); break;
+    case 'adm_hospital': state.leadData.inHospital = label; state.step = 'adm_city'; await askCity(); break;
+    case 'adm_city':
+      state.leadData.city = label;
+      if (value === 'bangalore') { state.step = 'adm_area'; await askBangaloreArea(); }
+      else { state.step = 'adm_timing'; await askTiming(); }
+      break;
+    case 'adm_area': state.leadData.area = label; state.step = 'adm_timing'; await askTiming(); break;
+    case 'adm_timing': state.leadData.admissionTiming = label; state.step = 'lead_patient_name'; state.data.leadType = 'Admission Lead';
+      await botSay('Great! Let us collect a few details to connect you with our team.<br><br>Please type the <strong>patient\'s full name</strong>:'); break;
+
+    case 'hc_service': state.leadData.service = label; state.step = 'hc_timing';
+      await botSay('When do you require the service?', [
+        { label: '⚡  Today', value: 'today' }, { label: '⏱  Within 48 hours', value: '48h' },
+        { label: '📅  Within a week', value: 'week' }, { label: '🔍  Exploring options', value: 'exploring' }
+      ]); break;
+    case 'hc_timing': state.leadData.timing = label; state.step = 'lead_patient_name'; state.data.leadType = 'Home Care Lead';
+      await botSay('Please type the <strong>patient\'s full name</strong>:'); break;
+
+    case 'opd_consult': state.leadData.consultType = label; state.step = 'opd_centre';
+      await botSay('Please type your <strong>preferred centre / city</strong>:'); break;
+    case 'opd_slot': state.leadData.slot = label; state.step = 'lead_name'; state.data.leadType = 'OPD Lead';
+      await botSay('Please type your <strong>name</strong>:'); break;
+
+    case 'speak_topic': state.leadData.topic = label; state.step = 'lead_name'; state.data.leadType = 'Representative Callback';
+      await botSay('Please type your <strong>name</strong>:'); break;
+
+    case 'cb_reason_new': state.leadData.reason = label; state.step = 'cb_time';
+      await botSay('Preferred callback time?', [
+        { label: '🌅  Morning', value: 'morning' }, { label: '☀️  Afternoon', value: 'afternoon' }, { label: '🌇  Evening', value: 'evening' }
+      ]); break;
+    case 'cb_time': state.leadData.callbackTime = label; state.step = 'lead_name'; state.data.leadType = 'Callback Lead';
+      await botSay('Please type your <strong>name</strong>:'); break;
+
+    case 'cb_reason_existing': state.leadData.reason = label; state.step = 'cb_time_existing';
+      await botSay('Preferred callback time?', [
+        { label: '🌅  Morning', value: 'morning' }, { label: '☀️  Afternoon', value: 'afternoon' }, { label: '🌇  Evening', value: 'evening' }
+      ]); break;
+    case 'cb_time_existing': state.leadData.callbackTime = label; await createTicket('Callback ticket created.'); break;
+
+    case 'job_role': state.leadData.role = label; state.step = 'job_exp';
+      await botSay('Years of experience?', [
+        { label: 'Fresher' }, { label: '1–3 years' }, { label: '3–5 years' }, { label: '5+ years' }
+      ]); break;
+    case 'job_exp': state.leadData.experience = label; state.step = 'lead_name'; state.data.leadType = 'Recruitment Lead';
+      await botSay('Please type your <strong>full name</strong>:'); break;
+
+    case 'spid_valid_action':
+      state.leadData.action = label;
+      if (['Clinical Support','Billing & Payments','Medical Records','Feedback / Complaint'].includes(label)) {
+        state.step = 'ticket_concern';
+        await botSay('Please describe your concern below and we\'ll create a support ticket for the relevant department:');
+      } else if (label === 'New Admission Request') {
+        state.step = 'adm_care_type'; await askCareType();
+      } else if (label === 'Home Care Inquiry') {
+        state.step = 'hc_service'; await askHCService();
+      } else if (label === 'OPD Inquiry') {
+        state.step = 'opd_consult'; await askOPDConsult();
+      } else {
+        state.step = 'lead_patient_name'; state.data.leadType = label;
+        await botSay('Please type the <strong>patient\'s name</strong>:');
+      }
+      break;
+
+    default:
+      await botSay('Let me take you back to the main menu.', [{ label: '🏠  Back to main menu', value: 'restart' }]);
+  }
+}
+
+async function askCareType() {
+  await botSay('What type of care are you looking for?', [
+    { label: 'Rehabilitation Care' }, { label: 'Long-Term Nursing Care' },
+    { label: 'Palliative Care' }, { label: 'Elder Care' }, { label: 'Not Sure' }
+  ]);
+}
+async function askHCService() {
+  await botSay('Which home care service are you looking for?', [
+    { label: 'Nursing Care at Home' }, { label: 'Physiotherapy at Home' },
+    { label: 'Doctor Visit' }, { label: 'Caregiver / Attendant' },
+    { label: 'Medical Equipment' }, { label: 'Other' }
+  ]);
+}
+async function askOPDConsult() {
+  await botSay('Which consultation are you looking for?', [
+    { label: 'Physician' }, { label: 'Occupation Therapy' }, { label: 'Neuro' },
+    { label: 'Speech & Swallow Therapy' }, { label: 'Psychology' }, { label: 'Ortho' },
+    { label: 'Cardiac & Respiratory' }, { label: 'Hydrotherapy' },
+    { label: 'Paediatric Rehabilitation' }, { label: 'Pain Management' }, { label: 'Other' }
+  ]);
+}
+async function askCity() {
+  await botSay('Which city are you looking for care in?', [
+    { label: 'Bangalore', value: 'bangalore' }, { label: 'Kochi', value: 'kochi' },
+    { label: 'Coimbatore', value: 'coimbatore' }, { label: 'Hyderabad', value: 'hyderabad' },
+    { label: 'Calicut', value: 'calicut' }, { label: 'Not Sure', value: 'not_sure' }
+  ]);
+}
+async function askBangaloreArea() {
+  await botSay('Which area in Bangalore?', [
+    { label: 'Koramangala' }, { label: 'HSR Layout' }, { label: 'Bannerghatta Road' },
+    { label: 'Manyata-Hebbal' }, { label: 'Whitefield' }, { label: 'Sarjapura' },
+    { label: 'Electronic City' }, { label: 'Kanakapura' }
+  ]);
+}
+async function askTiming() {
+  await botSay('When is admission required?', [
+    { label: '⚡  Immediately', value: 'immediate' }, { label: '📅  Within 1 week', value: '1week' },
+    { label: '🗓  Within 1 month', value: '1month' }, { label: '🔍  Exploring options', value: 'exploring' }
+  ]);
+}
+
+async function handleTextInput(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  userSay(trimmed);
+
+  if (state.step.endsWith('_spid')) {
+    if (/^SP\d{4,}/i.test(trimmed)) {
+      state.leadData.spId = trimmed.toUpperCase();
+      const svc = state.data.service;
+      if (svc === 'admission' || svc === 'speak') {
+        state.step = 'spid_valid_action';
+        await botSay(`SP ID <strong>${state.leadData.spId}</strong> verified ✅<br>How can we assist you today?`, [
+          { label: 'New Admission Request' }, { label: 'Clinical Support' },
+          { label: 'Billing & Payments' }, { label: 'Medical Records' },
+          { label: 'Home Care Inquiry' }, { label: 'OPD Inquiry' },
+          { label: 'Feedback / Complaint' }, { label: 'Speak to Relationship Manager' }
+        ]);
+      } else if (svc === 'home_care') {
+        state.step = 'hc_service';
+        await botSay(`SP ID <strong>${state.leadData.spId}</strong> verified ✅`);
+        await askHCService();
+      } else if (svc === 'opd') {
+        state.step = 'opd_consult';
+        await botSay(`SP ID <strong>${state.leadData.spId}</strong> verified ✅`);
+        await askOPDConsult();
+      } else if (svc === 'callback') {
+        state.step = 'cb_reason_existing';
+        await botSay(`SP ID <strong>${state.leadData.spId}</strong> verified ✅<br>Reason for callback?`, [
+          { label: 'Clinical Support' }, { label: 'Billing' }, { label: 'Medical Records' },
+          { label: 'Admission' }, { label: 'Home Care' }, { label: 'Feedback / Complaint' }
+        ]);
+      }
+    } else {
+      await botSay('That doesn\'t look like a valid SP ID. Please use the format <strong>SP12345</strong>.', [
+        { label: 'Try again', value: state.step },
+        { label: '🆕  New inquiry instead', value: 'no' }
+      ]);
+      state.step = state.step.replace('_spid', '_existing');
+    }
+    return;
+  }
+
+  if (state.step === 'ticket_concern') {
+    state.leadData.concern = trimmed;
+    await createTicket('Support ticket created for the relevant department.');
+    return;
+  }
+  if (state.step === 'opd_centre') {
+    state.leadData.centre = trimmed;
+    state.step = 'opd_slot';
+    await botSay('Select your preferred appointment time slot:', [
+      { label: '9:30 AM – 10:15 AM' }, { label: '10:15 AM – 11:00 AM' },
+      { label: '11:00 AM – 11:45 AM' }, { label: '11:45 AM – 12:30 PM' },
+      { label: '2:00 PM – 2:45 PM' }, { label: '2:45 PM – 3:30 PM' },
+      { label: '3:30 PM – 4:15 PM' }, { label: '4:15 PM – 5:00 PM' }
+    ]);
+    return;
+  }
+  if (state.step === 'lead_patient_name') {
+    state.leadData.patientName = trimmed; state.step = 'lead_attender_name';
+    await botSay('Please enter the <strong>attender / relative\'s name</strong>:'); return;
+  }
+  if (state.step === 'lead_attender_name') {
+    state.leadData.attenderName = trimmed; state.step = 'lead_relationship';
+    await botSay('What is your <strong>relationship to the patient</strong>? (e.g. Son, Daughter, Spouse)'); return;
+  }
+  if (state.step === 'lead_relationship') {
+    state.leadData.relationship = trimmed; state.step = 'lead_mobile';
+    await botSay('Please enter your <strong>mobile number</strong>:'); return;
+  }
+  if (state.step === 'lead_name') {
+    state.leadData.name = trimmed; state.step = 'lead_mobile';
+    await botSay('Please enter your <strong>mobile number</strong>:'); return;
+  }
+  if (state.step === 'lead_mobile') {
+    if (!/^\d{7,15}$/.test(trimmed.replace(/[\s\-\+\(\)]/g, ''))) {
+      await botSay('Please enter a valid mobile number (7–15 digits):'); return;
+    }
+    state.leadData.mobile = trimmed;
+    if (state.data.leadType === 'Admission Lead') {
+      state.step = 'lead_hospital';
+      await botSay('Which <strong>hospital is the patient currently in</strong>?<br>(Type <em>N/A</em> if not applicable)');
+    } else if (state.data.leadType === 'Recruitment Lead') {
+      state.step = 'lead_email';
+      await botSay('Please enter your <strong>email address</strong>:');
+    } else { await createLead(); }
+    return;
+  }
+  if (state.step === 'lead_hospital') {
+    state.leadData.currentHospital = trimmed; state.step = 'lead_doctor';
+    await botSay('Who is the <strong>treating doctor</strong>?<br>(Type <em>N/A</em> if not applicable)'); return;
+  }
+  if (state.step === 'lead_doctor') {
+    state.leadData.treatingDoctor = trimmed; await createLead(); return;
+  }
+  if (state.step === 'lead_email') {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      await botSay('Please enter a valid email address:'); return;
+    }
+    state.leadData.email = trimmed; state.step = 'job_location';
+    await botSay('Please enter your <strong>current location</strong>:'); return;
+  }
+  if (state.step === 'job_location') {
+    state.leadData.currentLocation = trimmed; state.step = 'job_pref_location';
+    await botSay('Please enter your <strong>preferred work location</strong>:'); return;
+  }
+  if (state.step === 'job_pref_location') {
+    state.leadData.preferredLocation = trimmed; await createLead(); return;
+  }
+  if (state.step === 'welcome') { await mainMenu(); return; }
+
+  await botSay('I didn\'t quite catch that. Would you like to go back to the main menu?', [
+    { label: '🏠  Main menu', value: 'restart' }
+  ]);
+}
+
+async function createLead() {
+  state.step = 'done';
+  const leadType = state.data.leadType || 'General';
+  await botSay('Processing your request... ⏳', null, 400);
+  let summary = `<span class="tag">✅ Lead Created — ${leadType}</span><br><br>`;
+  const labels = {
+    patientName: 'Patient name', attenderName: 'Attender name', relationship: 'Relationship',
+    mobile: 'Mobile', name: 'Name', careType: 'Care type', city: 'City', area: 'Area',
+    admissionTiming: 'Admission timing', inHospital: 'Currently in hospital',
+    currentHospital: 'Hospital', treatingDoctor: 'Treating doctor', service: 'Service',
+    timing: 'Timing', consultType: 'Consultation', centre: 'Centre', slot: 'Appointment slot',
+    topic: 'Topic', reason: 'Reason', callbackTime: 'Callback time', role: 'Role',
+    experience: 'Experience', email: 'Email', currentLocation: 'Current location',
+    preferredLocation: 'Preferred location', spId: 'SP ID'
+  };
+  Object.entries(state.leadData).forEach(([k, v]) => {
+    if (v && labels[k]) summary += `<strong>${labels[k]}:</strong> ${v}<br>`;
+  });
+  await botSay(summary);
+  await botSay('A Sukino representative will reach out to you shortly. Thank you! 🙏', [
+    { label: '🏠  Back to main menu', value: 'restart' }
+  ]);
+}
+
+async function createTicket(msg) {
+  state.step = 'done';
+  const concern = state.leadData.concern ? `<br><strong>Concern:</strong> ${state.leadData.concern}` : '';
+  await botSay(`<span class="tag ticket">🎫 Ticket Created</span><br><br>${msg}${concern}<br><br>Our team will get back to you soon.`, [
+    { label: '🏠  Back to main menu', value: 'restart' }
+  ]);
+}
+
+input.addEventListener('keydown', e => { if (e.key === 'Enter') { const v = input.value; input.value = ''; handleTextInput(v); } });
+sendBtn.addEventListener('click', () => { const v = input.value; input.value = ''; handleTextInput(v); });
+
+setTimeout(async () => { await mainMenu(); }, 400);
+</script>
+</body>
+</html>
